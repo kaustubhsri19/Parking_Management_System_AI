@@ -1,0 +1,34 @@
+# AI Powered Voice-to-Query Parking Management System
+# Environment Configuration File
+# Copy this file to .env and fill in your actual values
+
+# Supabase Configuration (Required)
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_KEY=your-supabase-anon-key-here
+
+# Flask Configuration
+FLASK_ENV=development
+FLASK_DEBUG=True
+FLASK_HOST=0.0.0.0
+FLASK_PORT=5000
+SECRET_KEY=your-secret-key-here
+
+# Voice Recognition Configuration
+VOICE_TIMEOUT=5
+VOICE_PHRASE_LIMIT=10
+VOICE_LANGUAGE=en-US
+
+# Text-to-Speech Configuration
+TTS_LANGUAGE=en
+TTS_SLOW=False
+
+# Database Configuration
+DB_POOL_SIZE=10
+DB_MAX_OVERFLOW=20
+
+# Logging Configuration
+LOG_LEVEL=INFO
+LOG_FILE=app.log
+
+# Security Configuration (Production)
+SESSION_COOKIE_SECURE=False

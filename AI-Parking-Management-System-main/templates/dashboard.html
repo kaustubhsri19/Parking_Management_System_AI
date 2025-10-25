@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Parking Slots Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: #f5f7fb; }
+    .slot-card {
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px; height: 90px; font-weight: 700; font-size: 1.1rem;
+      color: #1f2937; border: 2px solid #e5e7eb;
+    }
+    .slot-available { background: #dcfce7; border-color: #86efac; }
+    .slot-occupied { background: #fee2e2; border-color: #fca5a5; }
+    .legend .badge { font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h2 class="mb-0">Live Parking Slots</h2>
+      <a class="btn btn-outline-secondary" href="/">← Back to Home</a>
+    </div>
+    <p class="text-muted">This dashboard auto-refreshes every 10 seconds.</p>
+
+    <div class="legend d-flex align-items-center gap-2 mb-3">
+      <span class="badge text-bg-success">Available</span>
+      <span class="badge text-bg-danger">Occupied</span>
+    </div>
+
+    <div id="gridContainer" class="row g-3">
+      <!-- Slots grid rendered here -->
+    </div>
+
+    <div id="lastUpdated" class="text-muted mt-3 small">Last updated: --</div>
+  </div>
+
+  <script>
+    const gridContainer = document.getElementById('gridContainer');
+    const lastUpdated = document.getElementById('lastUpdated');
+
+    async function loadSlots() {
+      try {
+        const res = await fetch('/api/parking_slots');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed to load slots');
+        renderGrid(Array.isArray(data.data) ? data.data : []);
+        lastUpdated.textContent = 'Last updated: ' + new Date().toLocaleString();
+      } catch (e) {
+        gridContainer.innerHTML = '<div class="col-12"><div class="alert alert-danger">' + (e.message || 'Failed to load') + '</div></div>';
+      }
+    }
+
+    function renderGrid(slots) {
+      if (!slots.length) {
+        gridContainer.innerHTML = '<div class="col-12"><div class="alert alert-info">No slots to display.</div></div>';
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      slots.sort((a,b) => (a.slot_id||0) - (b.slot_id||0));
+      slots.forEach(s => {
+        const col = document.createElement('div');
+        col.className = 'col-6 col-md-4 col-lg-3';
+        const statusClass = (s.status === 'occupied') ? 'slot-occupied' : 'slot-available';
+        const vehicleInfo = s.status === 'occupied' && s.vehicle_id ? ' • V' + s.vehicle_id : '';
+        col.innerHTML = `
+          <div class="slot-card ${statusClass}">
+            <div>${s.slot_number || ('S' + s.slot_id)}${vehicleInfo}</div>
+          </div>
+        `;
+        frag.appendChild(col);
+      });
+      gridContainer.innerHTML = '';
+      gridContainer.appendChild(frag);
+    }
+
+    // Initial load and 10s refresh
+    loadSlots();
+    setInterval(loadSlots, 10000);
+  </script>
+</body>
+</html>
