@@ -427,13 +427,6 @@ Check Supabase dashboard → Table Editor to see data changes
 
 ### Model Training Issues
 
-**Issue**: TensorFlow/Keras compatibility error
-
-```bash
-# Solution: Install tf-keras
-pip install tf-keras
-```
-
 **Issue**: CUDA out of memory
 
 ```bash
