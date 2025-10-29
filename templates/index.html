@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Powered Voice-to-Query Parking Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-microphone"></i> AI Parking Voice Assistant</h1>
+            <p>Speak naturally to manage parking slots and queries</p>
+        </header>
+
+        <main>
+            <!-- Voice Input Section -->
+            <section class="voice-section">
+                <div class="voice-controls">
+                    <button id="voiceBtn" class="voice-button">
+                        <i class="fas fa-microphone"></i>
+                        <span id="voiceBtnText">Click to Speak</span>
+                    </button>
+                    <button id="testMicBtn" class="test-button">
+                        <i class="fas fa-check-circle"></i>
+                        Test Microphone
+                    </button>
+                </div>
+                
+                    <div class="voice-status">
+                        <div id="voiceStatus" class="status-message">Ready to listen...</div>
+                        <div id="recordingIndicator" class="recording-indicator" style="display: none;">
+                            <i class="fas fa-circle"></i>
+                            <span>Listening...</span>
+                        </div>
+                    </div>
+            </section>
+
+            <!-- Chat-Based Query Interface -->
+            <section class="chat-section">
+                <h3><i class="fas fa-comments"></i> Chat-Based Query Interface</h3>
+                <div id="chatMessages" class="chat-messages">
+                    <div class="chat-message system">
+                        <div class="bubble">
+                            Hi! You can ask me things like "show available slots" or "book slot 3".
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-row">
+                    <input id="chatInput" type="text" class="form-control" placeholder="Type your query here...">
+                    <button id="chatSubmit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Ask
+                    </button>
+                </div>
+            </section>
+
+            <!-- Recognized Text Display -->
+            <section class="text-display">
+                <h3><i class="fas fa-comment-dots"></i> Recognized Text</h3>
+                <div id="recognizedText" class="text-box">
+                    Your voice input will appear here...
+                </div>
+            </section>
+
+            <!-- Query Results Display -->
+            <section class="results-display">
+                <h3><i class="fas fa-database"></i> Query Results</h3>
+                <div id="queryResults" class="results-box">
+                    Database results will appear here...
+                </div>
+            </section>
+
+            <!-- Voice Response Section -->
+            <section class="voice-response">
+                <h3><i class="fas fa-volume-up"></i> Voice Response</h3>
+                <div class="response-controls">
+                    <button id="playResponseBtn" class="play-button" disabled>
+                        <i class="fas fa-play"></i>
+                        Play Response
+                    </button>
+                    <div id="responseText" class="response-text">
+                        Voice response will appear here...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Supported Commands -->
+            <section class="commands-section">
+                <h3><i class="fas fa-list"></i> Supported Voice Commands</h3>
+                <div id="supportedCommands" class="commands-list">
+                    <div class="loading">Loading supported commands...</div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 AI Powered Parking Management System</p>
+        </footer>
+    </div>
+
+    <script>
+        // Global variables
+        let isRecording = false;
+        let currentResponse = '';
+        let recognition = null; // Web Speech API instance
+
+        // DOM elements
+        const voiceBtn = document.getElementById('voiceBtn');
+        const testMicBtn = document.getElementById('testMicBtn');
+        const voiceStatus = document.getElementById('voiceStatus');
+        const recordingIndicator = document.getElementById('recordingIndicator');
+        const recognizedText = document.getElementById('recognizedText');
+        const queryResults = document.getElementById('queryResults');
+        const responseText = document.getElementById('responseText');
+        const playResponseBtn = document.getElementById('playResponseBtn');
+        const supportedCommands = document.getElementById('supportedCommands');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const chatSubmit = document.getElementById('chatSubmit');
+
+        // Event listeners
+        voiceBtn.addEventListener('click', toggleVoiceRecording);
+        testMicBtn.addEventListener('click', testMicrophone);
+        playResponseBtn.addEventListener('click', playVoiceResponse);
+        chatSubmit.addEventListener('click', submitTextQuery);
+        chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitTextQuery(); });
+
+        // Load supported commands on page load
+        document.addEventListener('DOMContentLoaded', loadSupportedCommands);
+
+        async function toggleVoiceRecording() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+
+        async function submitTextQuery() {
+            const text = (chatInput.value || '').trim();
+            if (!text) return;
+            addChatMessage('user', text);
+            chatInput.value = '';
+            try {
+                const res = await fetch('/text_query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    displayQueryResults(data);
+                    const message = summaryFromResult(data);
+                    addChatMessage('system', message);
+                    currentResponse = data.tts_text || message;
+                    responseText.textContent = currentResponse;
+                    playResponseBtn.disabled = false;
+                    // Auto-speak the answer
+                    playVoiceResponse();
+                } else {
+                    addChatMessage('system', `Error: ${data.error}`);
+                }
+            } catch (err) {
+                addChatMessage('system', `Error: ${err.message}`);
+            }
+        }
+
+        function addChatMessage(role, text) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `chat-message ${role}`;
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = text;
+            wrapper.appendChild(bubble);
+            chatMessages.appendChild(wrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function summaryFromResult(data) {
+            const result = data && data.database_result ? data.database_result : {};
+            const items = Array.isArray(result.data) ? result.data : [];
+            if (data.query_type === 'available_slots') {
+                return `There are ${items.length} available slots.`;
+            } else if (data.query_type === 'booked_slots') {
+                return `There are ${items.length} booked slots.`;
+            } else if (data.query_type === 'all_slots') {
+                return `There are ${items.length} total slots.`;
+            } else if (data.query_type === 'vehicles') {
+                return `Found ${items.length} vehicles.`;
+            } else if (data.query_type === 'parking_logs') {
+                return `Found ${items.length} parking logs.`;
+            } else if (data.query_type === 'book_slot') {
+                return result && result.message ? result.message : 'Slot booking processed.';
+            }
+            return data.tts_text || data.description || 'Query processed.';
+        }
+
+        async function startRecording() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                try {
+                    isRecording = true;
+                    updateVoiceUI(true);
+                    voiceStatus.textContent = 'Web Speech API not available. Please use text input.';
+                    recognizedText.textContent = 'Web Speech API not supported in this browser. Use the chat input below.';
+                    recognizedText.className = 'text-box error';
+                } catch (error) {
+                    console.error('Voice recording error (fallback):', error);
+                    recognizedText.textContent = `Error: ${error.message}`;
+                    recognizedText.className = 'text-box error';
+                } finally {
+                    isRecording = false;
+                    updateVoiceUI(false);
+                }
+                return;
+            }
+
+            try {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                isRecording = true;
+                updateVoiceUI(true);
+
+                recognition.onstart = () => {
+                    voiceStatus.textContent = 'Listening... Speak now!';
+                };
+
+                recognition.onresult = async (event) => {
+                    const transcript = Array.from(event.results)
+                        .map(result => result[0].transcript)
+                        .join(' ')
+                        .trim();
+                    if (transcript) {
+                        recognizedText.textContent = transcript;
+                        recognizedText.className = 'text-box success';
+                        await processVoiceCommand(transcript);
+                    } else {
+                        recognizedText.textContent = 'No speech recognized. Please try again.';
+                        recognizedText.className = 'text-box error';
+                    }
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    // Don't auto-execute on error - just show the error message
+                    let errorMsg = 'Speech recognition error';
+                    if (event.error === 'no-speech') {
+                        errorMsg = 'No speech detected. Please try again.';
+                    } else if (event.error === 'audio-capture') {
+                        errorMsg = 'Microphone not found or not accessible.';
+                    } else if (event.error === 'not-allowed') {
+                        errorMsg = 'Microphone permission denied. Please allow microphone access.';
+                    } else if (event.error === 'network') {
+                        errorMsg = 'Network error. Please check your internet connection and try again, or use the text input.';
+                    } else {
+                        errorMsg = `Speech recognition error: ${event.error}. Please use the text input below.`;
+                    }
+                    recognizedText.textContent = errorMsg;
+                    recognizedText.className = 'text-box error';
+                    voiceStatus.textContent = errorMsg;
+                };
+
+                recognition.onend = () => {
+                    isRecording = false;
+                    updateVoiceUI(false);
+                    // Don't auto-execute anything on end - only execute if onresult provided text
+                    if (voiceStatus.textContent === 'Listening... Speak now!') {
+                        voiceStatus.textContent = 'Recording ended. Click to try again or use text input.';
+                    }
+                };
+
+                recognition.start();
+            } catch (error) {
+                console.error('Voice recording error:', error);
+                recognizedText.textContent = `Error: ${error.message}`;
+                recognizedText.className = 'text-box error';
+                isRecording = false;
+                updateVoiceUI(false);
+            }
+        }
+
+        function stopRecording() {
+            try {
+                if (recognition) {
+                    recognition.stop();
+                }
+            } catch (e) {
+                console.warn('Error stopping recognition:', e);
+            } finally {
+                isRecording = false;
+                updateVoiceUI(false);
+            }
+        }
+
+        function updateVoiceUI(recording) {
+            if (recording) {
+                voiceBtn.innerHTML = '<i class="fas fa-stop"></i><span>Stop Recording</span>';
+                voiceBtn.className = 'voice-button recording';
+                voiceStatus.textContent = 'Listening... Speak now!';
+                recordingIndicator.style.display = 'flex';
+            } else {
+                voiceBtn.innerHTML = '<i class="fas fa-microphone"></i><span>Click to Speak</span>';
+                voiceBtn.className = 'voice-button';
+                voiceStatus.textContent = 'Ready to listen...';
+                recordingIndicator.style.display = 'none';
+            }
+        }
+
+        async function processVoiceCommand(text) {
+            try {
+                voiceStatus.textContent = 'Processing command...';
+                
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayQueryResults(data);
+                    currentResponse = data.tts_text || 'Query processed successfully.';
+                    responseText.textContent = currentResponse;
+                    playResponseBtn.disabled = false;
+                    addChatMessage('user', text);
+                    addChatMessage('system', summaryFromResult(data));
+                } else {
+                    displayError(data.error, data.suggestions);
+                    currentResponse = `Error: ${data.error}`;
+                    responseText.textContent = currentResponse;
+                    playResponseBtn.disabled = false;
+                    addChatMessage('user', text);
+                    addChatMessage('system', `Error: ${data.error}`);
+                }
+                
+            } catch (error) {
+                console.error('Query processing error:', error);
+                displayError(`Query processing error: ${error.message}`);
+                currentResponse = `Error: ${error.message}`;
+                responseText.textContent = currentResponse;
+                playResponseBtn.disabled = false;
+            } finally {
+                voiceStatus.textContent = 'Ready to listen...';
+            }
+        }
+
+        function displayQueryResults(data) {
+            const result = data && data.database_result ? data.database_result : {};
+            const items = Array.isArray(result.data) ? result.data : [];
+
+            const resultsDiv = document.createElement('div');
+            resultsDiv.className = 'query-result';
+
+            const infoHtml = `
+                <div class="query-info">
+                    <h4>Result Summary</h4>
+                    <p><strong>Action:</strong> ${data.description}</p>
+                    <p><strong>Items:</strong> ${items.length}</p>
+                </div>
+            `;
+
+            let tableHtml = '';
+            if (data.query_type === 'available_slots' || data.query_type === 'booked_slots' || data.query_type === 'all_slots' || data.query_type === 'book_slot') {
+                tableHtml = renderSlotsTable(items, data.query_type);
+            } else if (data.query_type === 'vehicles') {
+                tableHtml = renderVehiclesTable(items);
+            } else if (data.query_type === 'parking_logs') {
+                tableHtml = renderLogsTable(items);
+            } else {
+                tableHtml = `
+                    <div class="database-results">
+                        <h4>Details</h4>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+            }
+
+            resultsDiv.innerHTML = infoHtml + tableHtml;
+            queryResults.innerHTML = '';
+            queryResults.appendChild(resultsDiv);
+            queryResults.className = 'results-box success';
+        }
+
+        function renderSlotsTable(items, queryType) {
+            if (!items || items.length === 0) {
+                return `
+                    <div class="database-results">
+                        <h4>Parking Slots</h4>
+                        <div class="empty">No slots found.</div>
+                    </div>
+                `;
+            }
+            const rows = items.map(s => `
+                <tr>
+                    <td>${s.slot_id}</td>
+                    <td>${s.location}</td>
+                    <td>${badgeForStatus(s.status)}</td>
+                    <td>Floor ${s.floor_no}</td>
+                    <td>${badgeForType(s.slot_type)}</td>
+                </tr>
+            `).join('');
+            return `
+                <div class="database-results">
+                    <h4>Parking Slots</h4>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Slot ID</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Floor</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderVehiclesTable(items) {
+            if (!items || items.length === 0) {
+                return `
+                    <div class="database-results">
+                        <h4>Vehicles</h4>
+                        <div class="empty">No vehicles found.</div>
+                    </div>
+                `;
+            }
+            const rows = items.map(v => `
+                <tr>
+                    <td>${v.vehicle_id}</td>
+                    <td>${v.vehicle_no}</td>
+                    <td>${capitalize(v.vehicle_type)}</td>
+                    <td>${v.user_id}</td>
+                </tr>
+            `).join('');
+            return `
+                <div class="database-results">
+                    <h4>Vehicles</h4>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Number</th>
+                                <th>Type</th>
+                                <th>User ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderLogsTable(items) {
+            if (!items || items.length === 0) {
+                return `
+                    <div class="database-results">
+                        <h4>Parking Logs</h4>
+                        <div class="empty">No logs found.</div>
+                    </div>
+                `;
+            }
+            const rows = items.map(l => `
+                <tr>
+                    <td>${l.log_id}</td>
+                    <td>${l.vehicle_id}</td>
+                    <td>${l.slot_id}</td>
+                    <td>${formatDate(l.entry_time)}</td>
+                    <td>${l.exit_time ? formatDate(l.exit_time) : '<span class="badge badge-warning">In</span>'}</td>
+                    <td>${currency(l.total_amount)}</td>
+                    <td>${capitalize(l.payment_status)}</td>
+                </tr>
+            `).join('');
+            return `
+                <div class="database-results">
+                    <h4>Parking Logs</h4>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Vehicle</th>
+                                <th>Slot</th>
+                                <th>Entry</th>
+                                <th>Exit</th>
+                                <th>Amount</th>
+                                <th>Payment</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function badgeForStatus(status) {
+            const s = (status || '').toLowerCase();
+            const cls = s === 'available' ? 'badge-success' : s === 'booked' ? 'badge-danger' : 'badge-secondary';
+            return `<span class="badge ${cls}">${capitalize(s)}</span>`;
+        }
+
+        function badgeForType(type) {
+            const t = (type || '').toLowerCase();
+            let cls = 'badge-secondary';
+            if (t === 'premium') cls = 'badge-purple';
+            else if (t === 'electric') cls = 'badge-green';
+            else if (t === 'disabled') cls = 'badge-orange';
+            return `<span class="badge ${cls}">${capitalize(t)}</span>`;
+        }
+
+        function capitalize(s) {
+            if (!s) return '';
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '';
+            try {
+                const d = new Date(iso);
+                return d.toLocaleString();
+            } catch { return iso; }
+        }
+
+        function currency(n) {
+            if (n === null || n === undefined) return '-';
+            return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(n);
+        }
+
+        function displayError(error, suggestions = []) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-result';
+            
+            let suggestionsHtml = '';
+            if (suggestions && suggestions.length > 0) {
+                suggestionsHtml = `
+                    <div class="suggestions">
+                        <h4>Try these commands:</h4>
+                        <ul>
+                            ${suggestions.map(cmd => `<li>${cmd}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            errorDiv.innerHTML = `
+                <div class="error-message">
+                    <h4>Error</h4>
+                    <p>${error}</p>
+                    ${suggestionsHtml}
+                </div>
+            `;
+            
+            queryResults.innerHTML = '';
+            queryResults.appendChild(errorDiv);
+            queryResults.className = 'results-box error';
+        }
+
+        async function testMicrophone() {
+            try {
+                testMicBtn.disabled = true;
+                testMicBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    voiceStatus.textContent = 'Microphone API not supported in this browser.';
+                    voiceStatus.className = 'status-message error';
+                    return;
+                }
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(t => t.stop());
+                voiceStatus.textContent = 'Microphone permission granted and working!';
+                voiceStatus.className = 'status-message success';
+            } catch (error) {
+                console.error('Microphone test error:', error);
+                voiceStatus.textContent = `Microphone test error: ${error.message}`;
+                voiceStatus.className = 'status-message error';
+            } finally {
+                testMicBtn.disabled = false;
+                testMicBtn.innerHTML = '<i class="fas fa-check-circle"></i> Test Microphone';
+            }
+        }
+
+        function playVoiceResponse() {
+            if (currentResponse) {
+                // Use Web Speech API for text-to-speech
+                if ('speechSynthesis' in window) {
+                    // Cancel any ongoing speech
+                    speechSynthesis.cancel();
+                    
+                    const utterance = new SpeechSynthesisUtterance(currentResponse);
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1;
+                    utterance.lang = 'en-US';
+                    
+                    utterance.onerror = (event) => {
+                        console.error('Speech synthesis error:', event);
+                        voiceStatus.textContent = 'TTS Error: ' + event.error;
+                    };
+                    
+                    utterance.onstart = () => {
+                        voiceStatus.textContent = 'Speaking response...';
+                        playResponseBtn.disabled = true;
+                        playResponseBtn.innerHTML = '<i class="fas fa-volume-up"></i> Speaking...';
+                    };
+                    
+                    utterance.onend = () => {
+                        playResponseBtn.disabled = false;
+                        playResponseBtn.innerHTML = '<i class="fas fa-play"></i> Play Response';
+                    };
+                    
+                    try {
+                        speechSynthesis.speak(utterance);
+                    } catch (error) {
+                        console.error('Failed to speak:', error);
+                        voiceStatus.textContent = 'TTS failed: ' + error.message;
+                    }
+                } else {
+                    alert('Text-to-speech not supported in this browser. Use Chrome or Edge for best results.');
+                    voiceStatus.textContent = 'TTS not supported in this browser.';
+                }
+            } else {
+                voiceStatus.textContent = 'No response to speak.';
+            }
+        }
+
+        async function loadSupportedCommands() {
+            try {
+                const response = await fetch('/supported_commands');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displaySupportedCommands(data.commands);
+                } else {
+                    supportedCommands.innerHTML = '<div class="error">Failed to load supported commands.</div>';
+                }
+            } catch (error) {
+                console.error('Error loading supported commands:', error);
+                supportedCommands.innerHTML = '<div class="error">Error loading supported commands.</div>';
+            }
+        }
+
+        function displaySupportedCommands(commands) {
+            const commandsHtml = Object.entries(commands).map(([type, config]) => `
+                <div class="command-category">
+                    <h4>${type.replace('_', ' ').toUpperCase()}</h4>
+                    <p class="description">${config.description}</p>
+                    <ul class="command-list">
+                        ${config.patterns.map(pattern => `<li>"${pattern}"</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('');
+            
+            supportedCommands.innerHTML = commandsHtml;
+        }
+    </script>
+</body>
+</html>
