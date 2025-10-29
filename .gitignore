@@ -63,6 +63,10 @@ logs/
 *.log
 app.log
 
+# AI/ML Models (large files, should be trained locally)
+ai_pipeline/models/
+ai_pipeline/models/*
+
 # IDE
 .vscode/
 .idea/

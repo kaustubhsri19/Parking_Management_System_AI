@@ -10,12 +10,9 @@ from datetime import datetime
 import json
 
 # Import custom modules
-try:
-    from voice_module import voice_recognizer, get_voice_input
-except ImportError:
-    from voice_module_simple import voice_recognizer, get_voice_input
-from nlp_module import query_mapper, process_voice_command
+# Remove rule-based voice module usage; frontend handles browser STT
 from supabase_module import supabase_manager
+from ai_pipeline.local_orchestrator import process_text_query, transcribe_audio_file, LABEL_TO_INTENT
 from config import get_config
 
 # Get configuration
@@ -43,29 +40,13 @@ def index():
 
 @app.route('/voice_input', methods=['POST'])
 def voice_input():
-    """Handle voice input from frontend"""
+    """Handle voice input from frontend (kept for compatibility)"""
     try:
-        logger.info("Processing voice input request")
-        
-        # Get voice input
-        success, text = voice_recognizer.get_voice_input(
-            timeout=config.VOICE_TIMEOUT, 
-            phrase_time_limit=config.VOICE_PHRASE_LIMIT
-        )
-        
-        if success:
-            return jsonify({
-                'success': True,
-                'text': text,
-                'timestamp': datetime.now().isoformat()
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': text,
-                'timestamp': datetime.now().isoformat()
-            })
-            
+        return jsonify({
+            'success': False,
+            'error': 'Browser speech recognition is recommended. For server-side STT, add /stt_query with audio upload.',
+            'timestamp': datetime.now().isoformat()
+        })
     except Exception as e:
         logger.error(f"Error in voice input: {e}")
         return jsonify({
@@ -91,35 +72,8 @@ def process_query():
         
         logger.info(f"Processing query for text: '{voice_text}'")
         
-        # Map voice to SQL query
-        query_info = process_voice_command(voice_text)
-        
-        if not query_info['success']:
-            return jsonify({
-                'success': False,
-                'error': query_info.get('error', 'Unknown error'),
-                'suggestions': query_info.get('suggestions', []),
-                'timestamp': datetime.now().isoformat()
-            })
-        
-        # Execute query on Supabase
-        logger.info(f"Executing SQL: {query_info['sql_query']}")
-        result = supabase_manager.execute_query(query_info['sql_query'])
-        
-        # Prepare response
-        response = {
-            'success': True,
-            'voice_text': voice_text,
-            'query_type': query_info['query_type'],
-            'description': query_info['description'],
-            'sql_query': query_info['sql_query'],
-            'database_result': result,
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        # Add text-to-speech response
-        response['tts_text'] = _generate_tts_response(query_info, result)
-        
+        # Route via ML orchestrator (classifier on GPU)
+        response = process_text_query(voice_text)
         return jsonify(response)
         
     except Exception as e:
@@ -132,18 +86,14 @@ def process_query():
 
 @app.route('/test_microphone', methods=['POST'])
 def test_microphone():
-    """Test microphone functionality"""
+    """Test microphone functionality (handled in browser)."""
     try:
-        is_working = voice_recognizer.test_microphone()
-        available_mics = voice_recognizer.get_available_microphones()
-        
         return jsonify({
             'success': True,
-            'microphone_working': is_working,
-            'available_microphones': available_mics,
+            'microphone_working': True,
+            'available_microphones': ['Browser Microphone'],
             'timestamp': datetime.now().isoformat()
         })
-        
     except Exception as e:
         logger.error(f"Error testing microphone: {e}")
         return jsonify({
@@ -154,15 +104,21 @@ def test_microphone():
 
 @app.route('/supported_commands', methods=['GET'])
 def supported_commands():
-    """Get list of supported voice commands"""
+    """Get list of supported intents from ML router"""
     try:
-        commands = query_mapper.get_supported_commands()
+        commands = {}
+        for _, meta in LABEL_TO_INTENT.items():
+            if meta['key'] == 'fallback':
+                continue
+            commands[meta['key']] = {
+                'description': meta['description'],
+                'patterns': []
+            }
         return jsonify({
             'success': True,
             'commands': commands,
             'timestamp': datetime.now().isoformat()
         })
-        
     except Exception as e:
         logger.error(f"Error getting supported commands: {e}")
         return jsonify({
@@ -170,6 +126,31 @@ def supported_commands():
             'error': f'Error getting commands: {str(e)}',
             'timestamp': datetime.now().isoformat()
         })
+
+@app.route('/stt_query', methods=['POST'])
+def stt_query():
+    """Optional server-side STT + classify + route. Accepts multipart 'audio' or 'file'."""
+    try:
+        if 'audio' in request.files:
+            f = request.files['audio']
+        elif 'file' in request.files:
+            f = request.files['file']
+        else:
+            return jsonify({'success': False, 'error': 'No audio file provided', 'timestamp': datetime.now().isoformat()})
+
+        tmp_path = os.path.join('logs', f'upload_{int(time.time())}.wav')
+        os.makedirs('logs', exist_ok=True)
+        f.save(tmp_path)
+
+        stt_res = transcribe_audio_file(tmp_path)
+        if not stt_res.get('success'):
+            return jsonify({'success': False, 'error': stt_res.get('error', 'STT failed'), 'timestamp': datetime.now().isoformat()})
+
+        response = process_text_query(stt_res['text'])
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"/stt_query error: {e}")
+        return jsonify({'success': False, 'error': str(e), 'timestamp': datetime.now().isoformat()})
 
 @app.route('/health', methods=['GET'])
 def health_check():

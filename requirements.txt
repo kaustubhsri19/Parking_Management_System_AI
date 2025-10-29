@@ -1,7 +1,53 @@
+# ============================================
+# Core Web Framework
+# ============================================
 Flask==2.3.3
+python-dotenv==1.0.0
+
+# ============================================
+# Database
+# ============================================
 supabase==2.0.2
+
+# ============================================
+# AI/ML Core (CUDA-enabled PyTorch)
+# ============================================
+# PyTorch with CUDA 12.4+ support (compatible with CUDA 12.8)
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+--extra-index-url https://download.pytorch.org/whl/cu124
+
+# Hugging Face Transformers & Training
+transformers>=4.44.0
+datasets>=2.19.0
+accelerate>=0.33.0
+sentencepiece>=0.1.99
+protobuf>=3.20.0
+
+# Optional: TensorFlow/Keras compatibility (if needed)
+tf-keras>=2.15.0
+
+# ============================================
+# Audio Processing
+# ============================================
+soundfile>=0.12.1
 speechrecognition==3.10.0
 pyaudio==0.2.14
 gtts==2.4.0
-python-dotenv==1.0.0
 pydub==0.25.1
+
+# ============================================
+# CUDA Installation Notes
+# ============================================
+# This requirements.txt includes PyTorch with CUDA 12.4+ support.
+# The cu124 wheels are compatible with CUDA 12.4, 12.5, 12.6, 12.7, and 12.8.
+# 
+# If you have a different CUDA version, modify the --extra-index-url on line 19:
+# - CUDA 11.8: https://download.pytorch.org/whl/cu118
+# - CUDA 12.1: https://download.pytorch.org/whl/cu121
+# - CUDA 12.4+: https://download.pytorch.org/whl/cu124 (default - works with 12.8)
+# - CPU only:  https://download.pytorch.org/whl/cpu
+#
+# Check your CUDA version: nvidia-smi
+# ============================================

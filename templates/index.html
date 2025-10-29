@@ -181,18 +181,30 @@
         function summaryFromResult(data) {
             const result = data && data.database_result ? data.database_result : {};
             const items = Array.isArray(result.data) ? result.data : [];
-            if (data.query_type === 'available_slots') {
+            if (data.query_type === 'available_slots' || data.query_type === 'get_available_slots') {
                 return `There are ${items.length} available slots.`;
-            } else if (data.query_type === 'booked_slots') {
+            } else if (data.query_type === 'booked_slots' || data.query_type === 'get_filled_slots') {
                 return `There are ${items.length} booked slots.`;
-            } else if (data.query_type === 'all_slots') {
+            } else if (data.query_type === 'all_slots' || data.query_type === 'get_all_slots') {
                 return `There are ${items.length} total slots.`;
             } else if (data.query_type === 'vehicles') {
                 return `Found ${items.length} vehicles.`;
             } else if (data.query_type === 'parking_logs') {
                 return `Found ${items.length} parking logs.`;
-            } else if (data.query_type === 'book_slot') {
+            } else if (data.query_type === 'book_slot' || data.query_type === 'book_specific_slot' || data.query_type === 'book_any_slot') {
                 return result && result.message ? result.message : 'Slot booking processed.';
+            } else if (data.query_type === 'release_slot' || data.query_type === 'release_specific_slot') {
+                return result && result.message ? result.message : 'Slot release processed.';
+            } else if (data.query_type === 'slot_status' || data.query_type === 'get_specific_slot_status') {
+                return items && items.length ? `Slot ${items[0].slot_id} is ${items[0].status}.` : 'No slot found.';
+            } else if (data.query_type === 'release_all_slots') {
+                return result && result.message ? result.message : 'All slots have been released.';
+            } else if (data.query_type === 'book_all_slots') {
+                return result && result.message ? result.message : 'All slots have been booked.';
+            } else if (data.query_type === 'set_maintenance') {
+                return result && result.message ? result.message : 'Slot set to maintenance mode.';
+            } else if (data.query_type === 'get_maintenance_slots') {
+                return `There are ${items.length} slots in maintenance.`;
             }
             return data.tts_text || data.description || 'Query processed.';
         }
@@ -368,7 +380,13 @@
             `;
 
             let tableHtml = '';
-            if (data.query_type === 'available_slots' || data.query_type === 'booked_slots' || data.query_type === 'all_slots' || data.query_type === 'book_slot') {
+            const slotTableTypes = new Set([
+                'available_slots', 'booked_slots', 'all_slots', 'book_slot',
+                'get_available_slots', 'get_filled_slots', 'get_all_slots', 'book_specific_slot', 'book_any_slot',
+                'slot_status', 'get_specific_slot_status', 'release_slot', 'release_specific_slot',
+                'release_all_slots', 'book_all_slots', 'set_maintenance', 'get_maintenance_slots'
+            ]);
+            if (slotTableTypes.has(data.query_type)) {
                 tableHtml = renderSlotsTable(items, data.query_type);
             } else if (data.query_type === 'vehicles') {
                 tableHtml = renderVehiclesTable(items);

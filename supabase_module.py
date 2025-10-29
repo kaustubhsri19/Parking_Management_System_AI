@@ -50,16 +50,22 @@ class SupabaseManager:
         """Handle SELECT queries"""
         try:
             query_lower = query.lower()
+            import re
             
             if 'parking_slots' in query_lower:
-                if 'status' in query_lower and 'available' in query_lower:
-                    result = self.supabase.table('parking_slots').select('*').eq('status', 'available').execute()
+                # Check for explicit slot_id filter, e.g., WHERE slot_id = 12
+                slot_id_match = re.search(r"where\s+slot_id\s*[=<>]\s*(\d+)", query_lower)
+                if slot_id_match:
+                    slot_id = int(slot_id_match.group(1))
+                    result = self.supabase.table('parking_slots').select('*').eq('slot_id', slot_id).order('slot_id').execute()
+                elif 'status' in query_lower and 'available' in query_lower:
+                    result = self.supabase.table('parking_slots').select('*').eq('status', 'available').order('slot_id').execute()
                 elif 'status' in query_lower and 'booked' in query_lower:
-                    result = self.supabase.table('parking_slots').select('*').eq('status', 'booked').execute()
+                    result = self.supabase.table('parking_slots').select('*').eq('status', 'booked').order('slot_id').execute()
                 elif 'status' in query_lower and 'maintenance' in query_lower:
-                    result = self.supabase.table('parking_slots').select('*').eq('status', 'maintenance').execute()
+                    result = self.supabase.table('parking_slots').select('*').eq('status', 'maintenance').order('slot_id').execute()
                 else:
-                    result = self.supabase.table('parking_slots').select('*').execute()
+                    result = self.supabase.table('parking_slots').select('*').order('slot_id').execute()
                 return {"success": True, "data": result.data}
             
             elif 'vehicles' in query_lower:
