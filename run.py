@@ -35,25 +35,25 @@ def check_dependencies():
     print("🔍 Checking dependencies...")
     
     required_modules = [
-        'flask',
-        'speech_recognition',
-        'pyaudio',
-        'supabase',
-        'gtts',
-        'dotenv'
+        ('flask', 'Flask'),
+        ('torch', 'PyTorch'),
+        ('transformers', 'Transformers'),
+        ('supabase', 'Supabase'),
+        ('dotenv', 'python-dotenv')
     ]
     
     missing_modules = []
-    for module in required_modules:
+    for module, display_name in required_modules:
         try:
             __import__(module)
-        except ImportError:
-            missing_modules.append(module)
+        except (ImportError, Exception) as e:
+            missing_modules.append(display_name)
     
     if missing_modules:
-        print(f"❌ Missing dependencies: {', '.join(missing_modules)}")
-        print("   Please run 'pip install -r requirements.txt'")
-        return False
+        print(f"⚠️  Warning: Some dependencies may not be properly installed: {', '.join(missing_modules)}")
+        print("   If the application fails to start, run 'pip install -r requirements.txt'")
+        print("   Attempting to start anyway...")
+        return True  # Don't block startup, let the actual import errors show
     
     print("✅ All dependencies are installed")
     return True
@@ -62,6 +62,15 @@ def main():
     """Main run function"""
     print("🚀 Starting AI Powered Voice-to-Query Parking Management System")
     print("="*70)
+    
+    # Check if running in virtual environment
+    in_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
+    if not in_venv:
+        print("⚠️  Warning: Not running in a virtual environment")
+        print("   It's recommended to activate the virtual environment first:")
+        print("   - Windows: .\\venv\\Scripts\\activate")
+        print("   - Linux/Mac: source venv/bin/activate")
+        print()
     
     # Check environment
     if not check_environment():
@@ -98,10 +107,13 @@ def main():
     except Exception as e:
         print(f"\n❌ Failed to start application: {e}")
         print("\n🔧 Troubleshooting:")
-        print("1. Make sure all dependencies are installed: pip install -r requirements.txt")
-        print("2. Check your .env file configuration")
-        print("3. Run the test script: python test_installation.py")
-        print("4. Check the README.md for detailed setup instructions")
+        print("1. Activate the virtual environment:")
+        print("   - Windows: .\\venv\\Scripts\\activate")
+        print("   - Linux/Mac: source venv/bin/activate")
+        print("2. Make sure all dependencies are installed: pip install -r requirements.txt")
+        print("3. Check your .env file configuration")
+        print("4. Run the test script: python test_installation.py")
+        print("5. Check the README.md for detailed setup instructions")
         sys.exit(1)
 
 if __name__ == "__main__":

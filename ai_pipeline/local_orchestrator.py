@@ -174,6 +174,40 @@ def _tts_text_for(intent_key: str, sql_result: Dict[str, Any], params: Dict[str,
         return f"Query failed: {sql_result.get('error', 'Unknown error')}"
     data = sql_result.get('data', []) if isinstance(sql_result, dict) else []
     count = len(data) if isinstance(data, list) else 0
+    
+    # Handle intent keys from LABEL_TO_INTENT
+    if intent_key == 'get_available_slots':
+        return f"Found {count} available parking slots."
+    if intent_key == 'get_filled_slots':
+        return f"Found {count} booked parking slots."
+    if intent_key == 'get_all_slots':
+        return f"Retrieved {count} parking slots."
+    if intent_key == 'book_specific_slot':
+        return f"Slot {params.get('slot_id', 'unknown')} has been booked successfully."
+    if intent_key == 'book_any_slot':
+        # Extract slot_id from the result data
+        if data and len(data) > 0 and 'slot_id' in data[0]:
+            slot_id = data[0]['slot_id']
+            return f"Slot {slot_id} has been booked successfully."
+        return "A parking slot has been booked successfully."
+    if intent_key == 'book_all_slots':
+        return f"Successfully booked {count} available parking slots."
+    if intent_key == 'release_specific_slot':
+        return f"Slot {params.get('slot_id', 'unknown')} has been released successfully."
+    if intent_key == 'release_all_slots':
+        return f"Successfully released {count} booked parking slots."
+    if intent_key == 'get_specific_slot_status':
+        return f"Retrieved status for slot {params.get('slot_id', 'unknown')}."
+    if intent_key == 'get_available_count':
+        return f"There are {count} available parking slots."
+    if intent_key == 'get_filled_count':
+        return f"There are {count} booked parking slots."
+    if intent_key == 'set_maintenance':
+        return f"Slot {params.get('slot_id', 'unknown')} has been set to maintenance mode."
+    if intent_key == 'get_maintenance_slots':
+        return f"Found {count} slots in maintenance mode."
+    
+    # Legacy support for old keys
     if intent_key == 'available_slots':
         return f"Found {count} available parking slots."
     if intent_key == 'booked_slots':
@@ -195,6 +229,7 @@ def _tts_text_for(intent_key: str, sql_result: Dict[str, Any], params: Dict[str,
         return f"Retrieved {count} {entity}."
     if intent_key == 'slot_status':
         return f"Returned status for slot {params.get('slot_id', 'unknown')}."
+    
     return "Query executed successfully."
 
 

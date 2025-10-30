@@ -289,6 +289,11 @@ Get me the next available                                              , 3
 Find me the closest open spot                                          , 3
 gimme a spot                                                           , 3
 book any                                                               , 3
+book any slot                                                          , 3
+book any available slot                                                , 3
+book any free slot                                                     , 3
+book any one slot                                                      , 3
+book any parking slot                                                  , 3
 I just need a place to park                                            , 3
 find me something                                                      , 3
 auto assign a spot                                                     , 3
@@ -312,6 +317,14 @@ find me an open spot                                                   , 3
 gimme any spot                                                         , 3
 i need a spot                                                          , 3
 book a slot                                                            , 3
+reserve any slot                                                       , 3
+assign any slot                                                        , 3
+give me any slot                                                       , 3
+find any slot                                                          , 3
+get any slot                                                           , 3
+book one slot                                                          , 3
+book a single slot                                                     , 3
+book just one slot                                                     , 3
 assign me a spot                                                       , 3
 i need a parking spot                                                  , 3
 find me a parking spot                                                 , 3
@@ -1265,3 +1278,220 @@ excuse me                                                              , 13
 hello world                                                            , 13
 foo bar                                                                , 13
 test 123                                                               , 13
+show available parking spaces                                          , 0
+display free slots                                                     , 0
+which slots are empty                                                  , 0
+show me vacant parking                                                 , 0
+list unoccupied spaces                                                 , 0
+what parking is free                                                   , 0
+available spots please                                                 , 0
+show open parking bays                                                 , 0
+display available parking                                              , 0
+which ones are free                                                    , 0
+show booked parking                                                    , 1
+display occupied slots                                                 , 1
+which slots are taken                                                  , 1
+show me filled parking                                                 , 1
+list occupied spaces                                                   , 1
+what parking is booked                                                 , 1
+show taken spots                                                       , 1
+display filled parking                                                 , 1
+which ones are occupied                                                , 1
+show reserved slots                                                    , 1
+book any available                                                     , 3
+book any open slot                                                     , 3
+book any empty slot                                                    , 3
+book any vacant slot                                                   , 3
+book whichever is free                                                 , 3
+book whatever is available                                             , 3
+book the next free slot                                                , 3
+book the first available                                               , 3
+book the next open one                                                 , 3
+book any one available                                                 , 3
+book any single slot                                                   , 3
+book just any slot                                                     , 3
+book any random slot                                                   , 3
+book whichever slot                                                    , 3
+book whatever slot                                                     , 3
+assign me any slot                                                     , 3
+give me any available slot                                             , 3
+find and book any slot                                                 , 3
+auto book any slot                                                     , 3
+book one available slot                                                , 3
+book a random slot                                                     , 3
+book the closest slot                                                  , 3
+book nearest available                                                 , 3
+book next available slot                                               , 3
+reserve any slot                                                       , 3
+reserve any available                                                  , 3
+reserve any open slot                                                  , 3
+allocate any slot                                                      , 3
+assign any available slot                                              , 3
+book all available slots                                               , 10
+book all free slots                                                    , 10
+book all open slots                                                    , 10
+book all vacant slots                                                  , 10
+book all empty slots                                                   , 10
+book every available slot                                              , 10
+book every free slot                                                   , 10
+book every open slot                                                   , 10
+book the entire lot                                                    , 10
+book the whole parking                                                 , 10
+book the complete lot                                                  , 10
+book each available slot                                               , 10
+book each free slot                                                    , 10
+fill the entire parking                                                , 10
+fill all available                                                     , 10
+fill every slot                                                        , 10
+reserve all available                                                  , 10
+reserve all free slots                                                 , 10
+reserve every slot                                                     , 10
+occupy all slots                                                       , 10
+occupy all available                                                   , 10
+occupy every slot                                                      , 10
+take all slots                                                         , 10
+take all available                                                     , 10
+take every slot                                                        , 10
+book everything available                                              , 10
+book all the available slots                                           , 10
+book all the free slots                                                , 10
+book all the open slots                                                , 10
+book all the vacant slots                                              , 10
+book all the empty slots                                               , 10
+release all booked slots                                               , 9
+release all occupied slots                                             , 9
+release all filled slots                                               , 9
+release all taken slots                                                , 9
+release all reserved slots                                             , 9
+release every booked slot                                              , 9
+release every occupied slot                                            , 9
+release every filled slot                                              , 9
+free all booked slots                                                  , 9
+free all occupied slots                                                , 9
+free all filled slots                                                  , 9
+free every booked slot                                                 , 9
+free every occupied slot                                               , 9
+unbook all booked slots                                                , 9
+unbook all occupied slots                                              , 9
+unbook all filled slots                                                , 9
+clear all booked slots                                                 , 9
+clear all occupied slots                                               , 9
+clear all filled slots                                                 , 9
+empty all booked slots                                                 , 9
+empty all occupied slots                                               , 9
+empty all filled slots                                                 , 9
+vacate all booked slots                                                , 9
+vacate all occupied slots                                              , 9
+vacate all filled slots                                                , 9
+release the entire lot                                                 , 9
+release the whole parking                                              , 9
+release everything booked                                              , 9
+release all the booked slots                                           , 9
+release all the occupied slots                                         , 9
+release all the filled slots                                           , 9
+book slot number 1                                                     , 2
+book slot number 2                                                     , 2
+book slot number 3                                                     , 2
+book slot number 4                                                     , 2
+book slot number 5                                                     , 2
+book slot number 6                                                     , 2
+book slot number 7                                                     , 2
+book slot number 8                                                     , 2
+book slot number 9                                                     , 2
+book slot number 10                                                    , 2
+reserve slot 1                                                         , 2
+reserve slot 2                                                         , 2
+reserve slot 3                                                         , 2
+reserve slot 4                                                         , 2
+reserve slot 5                                                         , 2
+book parking slot 1                                                    , 2
+book parking slot 2                                                    , 2
+book parking slot 3                                                    , 2
+book parking slot 4                                                    , 2
+book parking slot 5                                                    , 2
+i want slot 1                                                          , 2
+i want slot 2                                                          , 2
+i want slot 3                                                          , 2
+i want slot 4                                                          , 2
+i want slot 5                                                          , 2
+give me slot 1                                                         , 2
+give me slot 2                                                         , 2
+give me slot 3                                                         , 2
+give me slot 4                                                         , 2
+give me slot 5                                                         , 2
+release slot number 1                                                  , 4
+release slot number 2                                                  , 4
+release slot number 3                                                  , 4
+release slot number 4                                                  , 4
+release slot number 5                                                  , 4
+free slot 1                                                            , 4
+free slot 2                                                            , 4
+free slot 3                                                            , 4
+free slot 4                                                            , 4
+free slot 5                                                            , 4
+unbook slot 1                                                          , 4
+unbook slot 2                                                          , 4
+unbook slot 3                                                          , 4
+unbook slot 4                                                          , 4
+unbook slot 5                                                          , 4
+vacate slot 1                                                          , 4
+vacate slot 2                                                          , 4
+vacate slot 3                                                          , 4
+vacate slot 4                                                          , 4
+vacate slot 5                                                          , 4
+clear slot 1                                                           , 4
+clear slot 2                                                           , 4
+clear slot 3                                                           , 4
+clear slot 4                                                           , 4
+clear slot 5                                                           , 4
+show all parking slots                                                 , 6
+display all slots                                                      , 6
+list all parking                                                       , 6
+show every slot                                                        , 6
+display every parking slot                                             , 6
+show complete list                                                     , 6
+display complete parking                                               , 6
+list every slot                                                        , 6
+show total slots                                                       , 6
+display total parking                                                  , 6
+check status of slot 1                                                 , 5
+check status of slot 2                                                 , 5
+check status of slot 3                                                 , 5
+check status of slot 4                                                 , 5
+check status of slot 5                                                 , 5
+what is status of slot 1                                               , 5
+what is status of slot 2                                               , 5
+what is status of slot 3                                               , 5
+is slot 1 available                                                    , 5
+is slot 2 available                                                    , 5
+is slot 3 free                                                         , 5
+is slot 4 free                                                         , 5
+is slot 5 occupied                                                     , 5
+count available slots                                                  , 7
+count free slots                                                       , 7
+count open slots                                                       , 7
+count vacant slots                                                     , 7
+count empty slots                                                      , 7
+how many available                                                     , 7
+how many free                                                          , 7
+how many open                                                          , 7
+how many vacant                                                        , 7
+how many empty                                                         , 7
+number of available slots                                              , 7
+number of free slots                                                   , 7
+total available slots                                                  , 7
+total free slots                                                       , 7
+count booked slots                                                     , 8
+count occupied slots                                                   , 8
+count filled slots                                                     , 8
+count taken slots                                                      , 8
+count reserved slots                                                   , 8
+how many booked                                                        , 8
+how many occupied                                                      , 8
+how many filled                                                        , 8
+how many taken                                                         , 8
+how many reserved                                                      , 8
+number of booked slots                                                 , 8
+number of occupied slots                                               , 8
+total booked slots                                                     , 8
+total occupied slots                                                   , 8

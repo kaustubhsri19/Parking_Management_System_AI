@@ -102,16 +102,6 @@ class SupabaseManager:
             import re
             
             if 'parking_slots' in query_lower and 'status' in query_lower:
-                # Extract slot_id from query using regex
-                slot_id_match = re.search(r'slot_id\s*[=<>]\s*(\d+)', query_lower)
-                if not slot_id_match:
-                    slot_id_match = re.search(r'where\s+slot_id\s*[=<>]\s*(\d+)', query_lower)
-                
-                if not slot_id_match:
-                    return {"error": "Could not parse slot_id from query"}
-                
-                slot_id = int(slot_id_match.group(1))
-                
                 # Extract status value from SET clause
                 status_match = re.search(r"status\s*=\s*['\"](\w+)['\"]", query_lower)
                 if not status_match:
@@ -119,15 +109,70 @@ class SupabaseManager:
                 
                 new_status = status_match.group(1)
                 
-                # Update the slot
-                result = self.supabase.table('parking_slots').update({'status': new_status}).eq('slot_id', slot_id).execute()
+                # Check if this is a bulk update (no slot_id in WHERE clause, or WHERE status=something)
+                slot_id_match = re.search(r'slot_id\s*[=<>]\s*(\d+)', query_lower)
+                if not slot_id_match:
+                    slot_id_match = re.search(r'where\s+slot_id\s*[=<>]\s*(\d+)', query_lower)
                 
-                status_action = 'booked' if new_status == 'booked' else 'released' if new_status == 'available' else 'updated'
-                return {
-                    "success": True, 
-                    "data": result.data, 
-                    "message": f"Slot {slot_id} {status_action} successfully"
-                }
+                # Check for subquery (book any slot)
+                has_subquery = 'select' in query_lower and 'limit' in query_lower
+                
+                if has_subquery:
+                    # Handle "book any slot" - find first available and book it
+                    if new_status == 'booked':
+                        # Get first available slot
+                        available = self.supabase.table('parking_slots').select('slot_id').eq('status', 'available').order('slot_id').limit(1).execute()
+                        if not available.data or len(available.data) == 0:
+                            return {"success": False, "error": "No available slots to book"}
+                        slot_id = available.data[0]['slot_id']
+                        result = self.supabase.table('parking_slots').update({'status': new_status}).eq('slot_id', slot_id).execute()
+                        return {
+                            "success": True,
+                            "data": result.data,
+                            "message": f"Slot {slot_id} booked successfully"
+                        }
+                    else:
+                        return {"error": "Subquery only supported for booking slots"}
+                
+                elif slot_id_match:
+                    # Single slot update
+                    slot_id = int(slot_id_match.group(1))
+                    
+                    # Check if there's an additional status condition in WHERE clause
+                    where_status_match = re.search(r"where.*status\s*=\s*['\"](\w+)['\"]", query_lower)
+                    
+                    if where_status_match:
+                        # Update only if current status matches
+                        old_status = where_status_match.group(1)
+                        result = self.supabase.table('parking_slots').update({'status': new_status}).eq('slot_id', slot_id).eq('status', old_status).execute()
+                    else:
+                        # Update regardless of current status
+                        result = self.supabase.table('parking_slots').update({'status': new_status}).eq('slot_id', slot_id).execute()
+                    
+                    status_action = 'booked' if new_status == 'booked' else 'released' if new_status == 'available' else 'updated'
+                    return {
+                        "success": True, 
+                        "data": result.data, 
+                        "message": f"Slot {slot_id} {status_action} successfully"
+                    }
+                else:
+                    # Bulk update - check for WHERE status condition
+                    where_status_match = re.search(r"where\s+status\s*=\s*['\"](\w+)['\"]", query_lower)
+                    
+                    if where_status_match:
+                        # Update all slots with specific status
+                        old_status = where_status_match.group(1)
+                        result = self.supabase.table('parking_slots').update({'status': new_status}).eq('status', old_status).execute()
+                        count = len(result.data) if result.data else 0
+                        status_action = 'booked' if new_status == 'booked' else 'released' if new_status == 'available' else 'updated'
+                        return {
+                            "success": True,
+                            "data": result.data,
+                            "message": f"{count} slots {status_action} successfully"
+                        }
+                    else:
+                        # Update all slots (no WHERE clause)
+                        return {"error": "Bulk update without WHERE clause is not allowed for safety"}
             else:
                 return {"error": "Unsupported UPDATE query"}
                 

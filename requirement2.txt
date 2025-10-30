@@ -1,0 +1,29 @@
+# ML / Transformers
+accelerate
+datasets
+transformers
+huggingface-hub
+
+# LangChain
+langchain
+langchain-community
+langgraph
+langsmith
+
+# Database & API
+supabase
+Flask
+
+# Data Science
+numpy
+pandas
+
+# Audio
+gTTS
+PyAudio
+pydub
+SpeechRecognition
+
+# Utilities
+python-dotenv
+requests
